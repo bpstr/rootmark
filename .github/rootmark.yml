@@ -1,0 +1,8 @@
+site:
+  title: Rootmark
+  description: Markdown repositories in, static websites out.
+  language: en
+
+build:
+  source: docs
+  output: _site
