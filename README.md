@@ -1,8 +1,8 @@
 # Rootmark
 
-Rootmark turns Markdown files into a static website.
+Rootmark turns Markdown repositories into static websites.
 
-The repository stays about content. Put Markdown at the root, keep the small site configuration in `.github/rootmark.yml`, and let Rootmark produce static HTML.
+Keep the repository about content: put Markdown at the root, keep the small site configuration in `.github/rootmark.yml`, and let Rootmark produce static HTML. No application scaffold is required.
 
 ## Install
 
@@ -18,7 +18,7 @@ go install github.com/bpstr/rootmark/cmd/rootmark@latest
 
 ## Quick start
 
-Create an `index.md`:
+Create `index.md`:
 
 ```md
 # Hello world
@@ -43,24 +43,108 @@ rootmark build
 
 The generated site is written to `_site/`.
 
-Routes follow the Markdown tree:
-
 ```text
 index.md           -> /index.html
 about.md           -> /about/index.html
 docs/install.md    -> /docs/install/index.html
 ```
 
-`README.md` and hidden directories are ignored.
+Non-Markdown files are copied as static assets. `README.md`, common repository metadata and hidden files/directories are ignored.
+
+## Default theme
+
+Rootmark ships with a polished, narrow default theme designed for developer-friendly content. It has a subtle terminal-like header, responsive typography, strong code rendering, accessible focus states, and automatic light/dark mode through the operating-system preference. It requires no JavaScript.
+
+Navigation, a primary CTA and footer credits are configured as data:
+
+```yaml
+navigation:
+  - label: Docs
+    url: /docs/
+  - label: GitHub
+    url: https://github.com/example/project
+
+primary:
+  label: Get started
+  url: /getting-started/
+  style: button # button or link
+
+footer:
+  text: Built in the open.
+  links:
+    - label: License
+      url: /license/
+  generated_with: true
+  developed_by:
+    label: Example
+    url: https://example.com
+```
+
+## Community themes
+
+A third-party theme is selected with one public HTTPS repository URL:
+
+```yaml
+theme: https://github.com/example/rootmark-theme
+```
+
+A theme repository is intentionally small:
+
+```text
+theme.yml
+templates/
+  default.html
+assets/
+  theme.css
+```
+
+`theme.yml` contains only the theme name and format version:
+
+```yaml
+name: Example
+format: 1
+```
+
+Themes are Go HTML templates plus static assets. Rootmark does not execute code supplied by a theme. Theme assets are published under `_rootmark/`.
+
+Pages use `default.html` unless frontmatter selects another template:
+
+```md
+---
+title: Landing page
+template: landing
+---
+```
+
+See `docs/themes.md` for the complete format and template context.
+
+## Site metadata
+
+Rootmark supports the basic metadata expected from a small static site:
+
+```yaml
+site:
+  title: My site
+  description: A small static site.
+  language: en
+  url: https://example.com/
+  author: Example Author
+  favicon: favicon.svg
+  logo: logo.svg
+  repository: https://github.com/example/project
+```
+
+`url` is used for canonical page URLs. Local favicon/logo paths are resolved correctly from nested pages and are copied with the rest of the site's static files.
 
 ## Frontmatter
 
-Frontmatter is optional. The first version supports page title and description:
+Frontmatter is optional:
 
 ```md
 ---
 title: About
 description: About this project.
+template: default
 ---
 
 # About
@@ -108,21 +192,26 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-Rootmark's own docs workflow uses the local Rootmark source to build `docs/`. It still validates and uploads the generated site artifact before Pages is enabled; deployment begins automatically once the repository has the GitHub Actions Pages source enabled.
-
 ## Configuration
 
-Rootmark reads `.github/rootmark.yml` by default:
+Rootmark reads `.github/rootmark.yml` by default. A fuller example is:
 
 ```yaml
 site:
   title: My site
   description: Optional site description.
   language: en
+  url: https://example.com/
+  author: Example Author
+  favicon: favicon.svg
+  logo: logo.svg
+  repository: https://github.com/example/project
 
 build:
   source: .
   output: _site
+
+theme: https://github.com/example/rootmark-theme
 ```
 
 Both build paths can be overridden from the CLI:

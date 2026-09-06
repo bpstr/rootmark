@@ -2,6 +2,27 @@ site:
   title: Rootmark
   description: Markdown repositories in, static websites out.
   language: en
+  url: https://bpstr.github.io/rootmark/
+  repository: https://github.com/bpstr/rootmark
+
+navigation:
+  - label: Start
+    url: /getting-started/
+  - label: Config
+    url: /configuration/
+  - label: Themes
+    url: /themes/
+
+primary:
+  label: GitHub
+  url: https://github.com/bpstr/rootmark
+  style: button
+
+footer:
+  generated_with: true
+  developed_by:
+    label: bpstr
+    url: https://github.com/bpstr
 
 build:
   source: docs

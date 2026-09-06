@@ -5,23 +5,26 @@ description: Markdown repositories in, static websites out.
 
 # Rootmark
 
-Rootmark is a small static site generator for repositories that should stay focused on Markdown content.
+Rootmark is a small standalone Markdown-to-HTML site generator written in Go.
 
-There is one content model: Markdown files. Rootmark discovers them, renders them with a built-in page layout, and writes static HTML.
+The repository stays about content. Markdown files and ordinary static assets are the site; `.github/rootmark.yml` contains the small amount of executable configuration needed to turn them into static HTML.
 
-- [Getting started](./getting-started/)
-- [Configuration](./configuration/)
+The built-in theme is narrow, responsive, developer-friendly and automatically adapts to light or dark mode without JavaScript. Community themes can completely replace it with one public repository URL.
 
-## Repository shape
-
-A basic Rootmark site can be this small:
+## Start small
 
 ```text
-.
-├── index.md
-├── about.md
-└── .github/
-    └── rootmark.yml
+index.md
+about.md
+.github/rootmark.yml
 ```
 
-No application source tree or JavaScript runtime is required in the content repository.
+Build it:
+
+```sh
+rootmark build
+```
+
+Then publish `_site/` anywhere that serves static files.
+
+Continue with [Getting started](/getting-started/), [Configuration](/configuration/) or [Themes](/themes/).
