@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - VERSION
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      - id: existing
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.existing.outputs.exists == 'false'
+        run: go test ./...
+
+      - if: steps.existing.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          mkdir -p dist
+
+          build_tar() {
+            os="$1"
+            arch="$2"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build \
+              -trimpath \
+              -ldflags "-s -w -X main.version=v${VERSION}" \
+              -o rootmark ./cmd/rootmark
+            tar -czf "dist/rootmark_${VERSION}_${os}_${arch}.tar.gz" rootmark
+            rm rootmark
+          }
+
+          build_zip() {
+            os="$1"
+            arch="$2"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build \
+              -trimpath \
+              -ldflags "-s -w -X main.version=v${VERSION}" \
+              -o rootmark.exe ./cmd/rootmark
+            zip -q "dist/rootmark_${VERSION}_${os}_${arch}.zip" rootmark.exe
+            rm rootmark.exe
+          }
+
+          build_tar linux amd64
+          build_tar linux arm64
+          build_tar darwin amd64
+          build_tar darwin arm64
+          build_zip windows amd64
+
+          (cd dist && sha256sum rootmark_* > checksums.txt)
+
+      - if: steps.existing.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v${VERSION}" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "Rootmark v${VERSION}" \
+            --generate-notes
