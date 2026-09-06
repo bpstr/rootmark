@@ -12,7 +12,10 @@ import (
 type Config struct {
 	Site       Site   `yaml:"site"`
 	Build      Build  `yaml:"build"`
+	Preset     string `yaml:"preset"`
 	Theme      string `yaml:"theme"`
+	Feed       *bool  `yaml:"feed"`
+	Sitemap    *bool  `yaml:"sitemap"`
 	Navigation []Link `yaml:"navigation"`
 	Primary    CTA    `yaml:"primary"`
 	Footer     Footer `yaml:"footer"`
@@ -54,7 +57,8 @@ type Footer struct {
 
 func Default() Config {
 	return Config{
-		Site: Site{Language: "en"},
+		Site:   Site{Language: "en"},
+		Preset: "simple",
 		Build: Build{
 			Source: ".",
 			Output: "_site",
@@ -88,6 +92,15 @@ func Load(path string) (Config, error) {
 	if cfg.Build.Output == "" {
 		cfg.Build.Output = "_site"
 	}
+
+	cfg.Preset = strings.ToLower(strings.TrimSpace(cfg.Preset))
+	if cfg.Preset == "" {
+		cfg.Preset = "simple"
+	}
+	if cfg.Preset != "simple" && cfg.Preset != "blog" {
+		return Config{}, fmt.Errorf("preset must be simple or blog")
+	}
+
 	if cfg.Primary.Style == "" {
 		cfg.Primary.Style = "button"
 	}
@@ -97,4 +110,22 @@ func Load(path string) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func (c Config) IsBlog() bool {
+	return strings.EqualFold(strings.TrimSpace(c.Preset), "blog")
+}
+
+func (c Config) FeedEnabled() bool {
+	if c.Feed != nil {
+		return *c.Feed
+	}
+	return c.IsBlog()
+}
+
+func (c Config) SitemapEnabled() bool {
+	if c.Sitemap != nil {
+		return *c.Sitemap
+	}
+	return c.IsBlog()
 }

@@ -230,7 +230,9 @@ const defaultTemplate = `<!doctype html>
   {{- else if .Site.Description}}
   <meta name="description" content="{{.Site.Description}}">
   {{- end}}
-  {{- if .Site.Author}}
+  {{- if .Page.Author}}
+  <meta name="author" content="{{.Page.Author}}">
+  {{- else if .Site.Author}}
   <meta name="author" content="{{.Site.Author}}">
   {{- end}}
   {{- if .Page.Canonical}}
@@ -238,6 +240,37 @@ const defaultTemplate = `<!doctype html>
   {{- end}}
   {{- if .Site.Favicon}}
   <link rel="icon" href="{{.Site.Favicon}}">
+  {{- end}}
+  {{- if .Site.RSS}}
+  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}} RSS" href="{{.Site.RSS}}">
+  <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}} Atom" href="{{.Site.Atom}}">
+  {{- end}}
+  {{- if .Page.Title}}
+  <meta property="og:title" content="{{.Page.Title}}">
+  {{- end}}
+  {{- if .Page.Description}}
+  <meta property="og:description" content="{{.Page.Description}}">
+  {{- else if .Site.Description}}
+  <meta property="og:description" content="{{.Site.Description}}">
+  {{- end}}
+  <meta property="og:type" content="{{if .Page.IsPost}}article{{else}}website{{end}}">
+  {{- if .Page.Canonical}}
+  <meta property="og:url" content="{{.Page.Canonical}}">
+  {{- end}}
+  {{- if .Site.Title}}
+  <meta property="og:site_name" content="{{.Site.Title}}">
+  {{- end}}
+  {{- if .Page.ImageCanonical}}
+  <meta property="og:image" content="{{.Page.ImageCanonical}}">
+  {{- end}}
+  {{- if and .Page.IsPost .Page.DateISO}}
+  <meta property="article:published_time" content="{{.Page.DateISO}}">
+  {{- end}}
+  {{- if and .Page.IsPost .Page.UpdatedISO}}
+  <meta property="article:modified_time" content="{{.Page.UpdatedISO}}">
+  {{- end}}
+  {{- range .Page.Tags}}
+  <meta property="article:tag" content="{{.}}">
   {{- end}}
   <style>
     :root {
@@ -280,9 +313,9 @@ const defaultTemplate = `<!doctype html>
     .brand { display: inline-flex; align-items: center; gap: .55rem; min-width: 0; font: 600 .88rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-decoration: none; letter-spacing: -.02em; }
     .brand img { width: 1.35rem; height: 1.35rem; object-fit: contain; border-radius: .2rem; }
     .prompt { color: var(--muted); font-weight: 500; }
-    nav { margin-left: auto; display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; justify-content: flex-end; }
-    nav a { font: 500 .78rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); text-decoration: none; }
-    nav a:hover { color: var(--text); }
+    .topnav { margin-left: auto; display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; justify-content: flex-end; }
+    .topnav a { font: 500 .78rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); text-decoration: none; }
+    .topnav a:hover { color: var(--text); }
     .primary { display: inline-flex; align-items: center; justify-content: center; min-height: 2.1rem; padding: 0 .75rem; border-radius: .45rem; background: var(--accent); color: var(--accent-text); font: 650 .76rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-decoration: none; white-space: nowrap; }
     .primary.link { min-height: auto; padding: 0; background: transparent; color: var(--text); text-decoration: underline; text-underline-offset: .22em; }
     main { padding: 3.2rem .15rem 1rem; }
@@ -298,6 +331,19 @@ const defaultTemplate = `<!doctype html>
     pre { overflow-x: auto; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: .6rem; background: var(--soft); font-size: .88rem; line-height: 1.6; }
     code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
     :not(pre) > code { padding: .12rem .3rem; border: 1px solid var(--line); border-radius: .3rem; background: var(--soft); }
+    .article-meta, .post-date, .post-tags { color: var(--muted); font: 500 .76rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .article-meta { display: flex; gap: .5rem 1rem; flex-wrap: wrap; margin-bottom: 1.35rem; }
+    .post-list { margin-top: 3rem; }
+    .post-list > h2 { margin-bottom: 1rem; }
+    .post-entry { padding: 1.25rem 0; border-top: 1px solid var(--line); }
+    .post-entry:last-child { border-bottom: 1px solid var(--line); }
+    .post-entry h3 { margin: .3rem 0 .4rem; font-size: 1.25rem; }
+    .post-entry h3 a { text-decoration: none; }
+    .post-entry p { margin: .35rem 0 0; color: var(--muted); }
+    .post-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    .post-nav a { display: block; padding: .8rem; border: 1px solid var(--line); border-radius: .5rem; text-decoration: none; }
+    .post-nav a:last-child { text-align: right; }
+    .post-nav small { display: block; margin-bottom: .2rem; color: var(--muted); font: 500 .7rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     footer { margin-top: 3.7rem; padding: 1.2rem .15rem 0; border-top: 1px solid var(--line); color: var(--muted); font: 500 .74rem/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .footer-row { display: flex; gap: .8rem 1.1rem; flex-wrap: wrap; align-items: center; }
     .footer-row + .footer-row { margin-top: .35rem; }
@@ -306,8 +352,10 @@ const defaultTemplate = `<!doctype html>
     @media (max-width: 680px) {
       .shell { width: min(100% - 1.1rem, 48rem); margin-top: .55rem; }
       .topbar { align-items: flex-start; flex-wrap: wrap; }
-      nav { width: 100%; margin-left: 0; justify-content: flex-start; }
+      .topnav { width: 100%; margin-left: 0; justify-content: flex-start; }
       main { padding-top: 2.5rem; }
+      .post-nav { grid-template-columns: 1fr; }
+      .post-nav a:last-child { text-align: left; }
     }
   </style>
 </head>
@@ -319,7 +367,7 @@ const defaultTemplate = `<!doctype html>
         <span class="prompt" aria-hidden="true">~/</span><span>{{if .Site.Title}}{{.Site.Title}}{{else}}rootmark{{end}}</span>
       </a>
       {{- if or .Site.Navigation .Site.Primary.Label}}
-      <nav aria-label="Main navigation">
+      <nav class="topnav" aria-label="Main navigation">
         {{- range .Site.Navigation}}
         <a href="{{.URL}}">{{.Label}}</a>
         {{- end}}
@@ -329,7 +377,22 @@ const defaultTemplate = `<!doctype html>
       </nav>
       {{- end}}
     </header>
-    <main>{{.Page.Content}}</main>
+    <main>
+      {{- if .Page.IsPost}}
+      <div class="article-meta">
+        {{- if .Page.DateISO}}<time datetime="{{.Page.DateISO}}">{{.Page.Date}}</time>{{end}}
+        {{- if .Page.Author}}<span>{{.Page.Author}}</span>{{end}}
+        {{- if .Page.Tags}}<span>{{range $i, $tag := .Page.Tags}}{{if $i}} · {{end}}{{$tag}}{{end}}</span>{{end}}
+      </div>
+      {{- end}}
+      {{.Page.Content}}
+      {{- if and .Page.IsPost (or .Page.Previous .Page.Next)}}
+      <nav class="post-nav" aria-label="Post navigation">
+        <div>{{if .Page.Previous}}<a href="{{.Page.Previous.URL}}"><small>Previous</small>{{.Page.Previous.Title}}</a>{{end}}</div>
+        <div>{{if .Page.Next}}<a href="{{.Page.Next.URL}}"><small>Next</small>{{.Page.Next.Title}}</a>{{end}}</div>
+      </nav>
+      {{- end}}
+    </main>
     {{- if or .Site.Footer.Text .Site.Footer.Links .Site.Footer.GeneratedWith .Site.Footer.DevelopedBy.Label}}
     <footer>
       {{- if or .Site.Footer.Text .Site.Footer.Links}}

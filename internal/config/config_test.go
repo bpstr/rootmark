@@ -11,11 +11,41 @@ func TestLoadDefaultsWhenConfigIsMissing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Build.Source != "." || cfg.Build.Output != "_site" || cfg.Site.Language != "en" || cfg.Theme != "" {
+	if cfg.Build.Source != "." || cfg.Build.Output != "_site" || cfg.Site.Language != "en" || cfg.Theme != "" || cfg.Preset != "simple" {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
-	if cfg.Primary.Style != "button" || !cfg.Footer.GeneratedWith {
-		t.Fatalf("unexpected chrome defaults: %+v", cfg)
+	if cfg.Primary.Style != "button" || !cfg.Footer.GeneratedWith || cfg.FeedEnabled() || cfg.SitemapEnabled() {
+		t.Fatalf("unexpected defaults: %+v", cfg)
+	}
+}
+
+func TestLoadBlogPresetEnablesPublicationDefaults(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rootmark.yml")
+	if err := os.WriteFile(path, []byte("preset: blog\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.IsBlog() || !cfg.FeedEnabled() || !cfg.SitemapEnabled() {
+		t.Fatalf("blog defaults were not enabled: %+v", cfg)
+	}
+}
+
+func TestLoadAllowsBlogPublicationDefaultsToBeDisabled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rootmark.yml")
+	if err := os.WriteFile(path, []byte("preset: blog\nfeed: false\nsitemap: false\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.FeedEnabled() || cfg.SitemapEnabled() {
+		t.Fatalf("explicit publication settings were ignored: %+v", cfg)
 	}
 }
 
@@ -67,5 +97,15 @@ func TestLoadRejectsInvalidPrimaryStyle(t *testing.T) {
 	}
 	if _, err := Load(path); err == nil {
 		t.Fatal("expected invalid primary style to fail")
+	}
+}
+
+func TestLoadRejectsUnknownPreset(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rootmark.yml")
+	if err := os.WriteFile(path, []byte("preset: magazine\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("expected unknown preset to fail")
 	}
 }
