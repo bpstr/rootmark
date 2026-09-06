@@ -38,9 +38,13 @@ jobs:
         run: go build -trimpath -o rootmark ./cmd/rootmark
       - name: Build docs with Rootmark
         run: ./rootmark build
-      - uses: actions/configure-pages@v5
+      - id: pages
+        name: Configure Pages
+        continue-on-error: true
+        uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - id: deployment
+        if: steps.pages.outcome == 'success'
         uses: actions/deploy-pages@v4

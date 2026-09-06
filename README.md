@@ -60,7 +60,6 @@ Frontmatter is optional. The first version supports page title and description:
 ```md
 ---
 title: About
-
 description: About this project.
 ---
 
@@ -70,6 +69,8 @@ description: About this project.
 Without a frontmatter title, Rootmark uses the first level-one heading and then falls back to the filename.
 
 ## GitHub Pages
+
+Before the first deployment, open **Settings → Pages** in the repository and set **Source** to **GitHub Actions**. This is a one-time GitHub repository setting.
 
 A minimal Pages workflow can install Rootmark and upload `_site/`:
 
@@ -106,6 +107,8 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 ```
+
+Rootmark's own docs workflow uses the local Rootmark source to build `docs/`. It still validates and uploads the generated site artifact before Pages is enabled; deployment begins automatically once the repository has the GitHub Actions Pages source enabled.
 
 ## Configuration
 
