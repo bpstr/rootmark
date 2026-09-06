@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/bpstr/rootmark/internal/config"
+	"github.com/bpstr/rootmark/internal/theme"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
 	"gopkg.in/yaml.v3"
@@ -23,45 +25,61 @@ type Result struct {
 type frontMatter struct {
 	Title       string `yaml:"title"`
 	Description string `yaml:"description"`
+	Template    string `yaml:"template"`
 }
 
-type pageData struct {
-	SiteTitle   string
+type templateData struct {
+	Site        siteData
+	Page        pageData
+	Root        string
+	ThemeAssets string
+}
+
+type siteData struct {
 	Title       string
 	Description string
 	Language    string
-	HTML        template.HTML
+	URL         string
+	Author      string
+	Favicon     string
+	Logo        string
+	Repository  string
+	Home        string
+	Navigation  []linkData
+	Primary     ctaData
+	Footer      footerData
+}
+
+type linkData struct {
+	Label string
+	URL   string
+}
+
+type ctaData struct {
+	Label string
+	URL   string
+	Style string
+}
+
+type footerData struct {
+	Text          string
+	Links         []linkData
+	GeneratedWith bool
+	DevelopedBy   linkData
+}
+
+type pageData struct {
+	Title       string
+	Description string
+	Content     template.HTML
+	URL         string
+	Canonical   string
+	Source      string
 }
 
 var markdown = goldmark.New(
 	goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 )
-
-var pageTemplate = template.Must(template.New("page").Parse(`<!doctype html>
-<html lang="{{.Language}}">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{if .Title}}{{.Title}}{{if .SiteTitle}} · {{.SiteTitle}}{{end}}{{else}}{{.SiteTitle}}{{end}}</title>
-  {{- if .Description}}
-  <meta name="description" content="{{.Description}}">
-  {{- end}}
-  <style>
-    :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { margin: 0; line-height: 1.65; }
-    main { width: min(100% - 2rem, 48rem); margin: 4rem auto; }
-    h1, h2, h3 { line-height: 1.2; }
-    img { max-width: 100%; height: auto; }
-    pre { overflow-x: auto; padding: 1rem; border-radius: .5rem; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    a { color: inherit; text-underline-offset: .18em; }
-  </style>
-</head>
-<body>
-  <main>{{.HTML}}</main>
-</body>
-</html>
-`))
 
 func Build(cfg config.Config) (Result, error) {
 	source, err := filepath.Abs(cfg.Build.Source)
@@ -84,11 +102,20 @@ func Build(cfg config.Config) (Result, error) {
 		return Result{}, fmt.Errorf("source and output directories must differ")
 	}
 
+	activeTheme, err := theme.Load(cfg.Theme)
+	if err != nil {
+		return Result{}, err
+	}
+	defer activeTheme.Close()
+
 	if err := os.RemoveAll(output); err != nil {
 		return Result{}, fmt.Errorf("clean output: %w", err)
 	}
 	if err := os.MkdirAll(output, 0o755); err != nil {
 		return Result{}, fmt.Errorf("create output: %w", err)
+	}
+	if err := activeTheme.CopyAssets(output); err != nil {
+		return Result{}, fmt.Errorf("copy theme assets: %w", err)
 	}
 
 	pages := 0
@@ -106,19 +133,23 @@ func Build(cfg config.Config) (Result, error) {
 			return nil
 		}
 
-		if !strings.EqualFold(filepath.Ext(path), ".md") || strings.EqualFold(entry.Name(), "README.md") {
-			return nil
-		}
-
 		rel, err := filepath.Rel(source, path)
 		if err != nil {
 			return err
 		}
-		if err := renderFile(cfg, path, rel, output); err != nil {
-			return err
+		if strings.HasPrefix(entry.Name(), ".") || isRepositoryFile(rel) {
+			return nil
 		}
-		pages++
-		return nil
+
+		if strings.EqualFold(filepath.Ext(path), ".md") {
+			if err := renderFile(cfg, activeTheme, path, rel, output); err != nil {
+				return err
+			}
+			pages++
+			return nil
+		}
+
+		return copyStaticFile(path, rel, output)
 	})
 	if err != nil {
 		return Result{}, fmt.Errorf("build site: %w", err)
@@ -131,7 +162,7 @@ func Build(cfg config.Config) (Result, error) {
 	return Result{Pages: pages, Output: cfg.Build.Output}, nil
 }
 
-func renderFile(cfg config.Config, sourcePath, relativePath, output string) error {
+func renderFile(cfg config.Config, activeTheme *theme.Theme, sourcePath, relativePath, output string) error {
 	data, err := os.ReadFile(sourcePath)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", relativePath, err)
@@ -152,20 +183,58 @@ func renderFile(cfg config.Config, sourcePath, relativePath, output string) erro
 		title = inferTitle(body, relativePath, cfg.Site.Title)
 	}
 
-	page := pageData{
-		SiteTitle:   cfg.Site.Title,
-		Title:       title,
-		Description: meta.Description,
-		Language:    cfg.Site.Language,
-		HTML:        template.HTML(rendered.String()), // goldmark omits raw HTML by default.
+	destination := outputPath(output, relativePath)
+	root, err := filepath.Rel(filepath.Dir(destination), output)
+	if err != nil {
+		return fmt.Errorf("resolve site root for %s: %w", relativePath, err)
+	}
+	root = filepath.ToSlash(root)
+	route := routePath(relativePath)
+
+	page := templateData{
+		Site: siteData{
+			Title:       cfg.Site.Title,
+			Description: cfg.Site.Description,
+			Language:    cfg.Site.Language,
+			URL:         cfg.Site.URL,
+			Author:      cfg.Site.Author,
+			Favicon:     relativeSiteURL(root, cfg.Site.Favicon),
+			Logo:        relativeSiteURL(root, cfg.Site.Logo),
+			Repository:  cfg.Site.Repository,
+			Home:        homeURL(root),
+			Navigation:  resolveLinks(root, cfg.Navigation),
+			Primary: ctaData{
+				Label: cfg.Primary.Label,
+				URL:   relativeSiteURL(root, cfg.Primary.URL),
+				Style: cfg.Primary.Style,
+			},
+			Footer: footerData{
+				Text:          cfg.Footer.Text,
+				Links:         resolveLinks(root, cfg.Footer.Links),
+				GeneratedWith: cfg.Footer.GeneratedWith,
+				DevelopedBy: linkData{
+					Label: cfg.Footer.DevelopedBy.Label,
+					URL:   relativeSiteURL(root, cfg.Footer.DevelopedBy.URL),
+				},
+			},
+		},
+		Page: pageData{
+			Title:       title,
+			Description: meta.Description,
+			Content:     template.HTML(rendered.String()), // goldmark omits raw HTML by default.
+			URL:         route,
+			Canonical:   canonicalURL(cfg.Site.URL, route),
+			Source:      filepath.ToSlash(relativePath),
+		},
+		Root:        root,
+		ThemeAssets: relativeSiteURL(root, "/_rootmark/"),
 	}
 
 	var document bytes.Buffer
-	if err := pageTemplate.Execute(&document, page); err != nil {
+	if err := activeTheme.Execute(&document, meta.Template, page); err != nil {
 		return fmt.Errorf("render page template for %s: %w", relativePath, err)
 	}
 
-	destination := outputPath(output, relativePath)
 	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
 		return fmt.Errorf("create directory for %s: %w", relativePath, err)
 	}
@@ -236,6 +305,94 @@ func outputPath(output, relativePath string) string {
 	}
 
 	return filepath.Join(output, withoutExt, "index.html")
+}
+
+func routePath(relativePath string) string {
+	rel := filepath.ToSlash(filepath.Clean(relativePath))
+	withoutExt := strings.TrimSuffix(rel, filepath.Ext(rel))
+	if strings.EqualFold(filepath.Base(withoutExt), "index") {
+		dir := filepath.ToSlash(filepath.Dir(withoutExt))
+		if dir == "." {
+			return "/"
+		}
+		return "/" + strings.Trim(dir, "/") + "/"
+	}
+	return "/" + strings.Trim(withoutExt, "/") + "/"
+}
+
+func copyStaticFile(sourcePath, relativePath, output string) error {
+	destination := filepath.Join(output, relativePath)
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return fmt.Errorf("create directory for %s: %w", relativePath, err)
+	}
+	contents, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return fmt.Errorf("read asset %s: %w", relativePath, err)
+	}
+	if err := os.WriteFile(destination, contents, 0o644); err != nil {
+		return fmt.Errorf("write asset %s: %w", relativePath, err)
+	}
+	return nil
+}
+
+func isRepositoryFile(relativePath string) bool {
+	if filepath.Dir(relativePath) != "." {
+		return false
+	}
+	switch strings.ToLower(filepath.Base(relativePath)) {
+	case "readme.md", "license", "license.md", "license.txt", "changelog.md", "contributing.md":
+		return true
+	default:
+		return false
+	}
+}
+
+func resolveLinks(root string, links []config.Link) []linkData {
+	resolved := make([]linkData, 0, len(links))
+	for _, link := range links {
+		if strings.TrimSpace(link.Label) == "" || strings.TrimSpace(link.URL) == "" {
+			continue
+		}
+		resolved = append(resolved, linkData{Label: link.Label, URL: relativeSiteURL(root, link.URL)})
+	}
+	return resolved
+}
+
+func relativeSiteURL(root, target string) string {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return ""
+	}
+	if strings.HasPrefix(target, "#") || strings.HasPrefix(target, "//") {
+		return target
+	}
+	if target == "/" {
+		return homeURL(root)
+	}
+	parsed, err := url.Parse(target)
+	if err == nil && parsed.IsAbs() {
+		return target
+	}
+
+	target = strings.TrimLeft(target, "/")
+	if root == "." || root == "" {
+		return target
+	}
+	return strings.TrimRight(root, "/") + "/" + target
+}
+
+func homeURL(root string) string {
+	if root == "." || root == "" {
+		return "./"
+	}
+	return strings.TrimRight(root, "/") + "/"
+}
+
+func canonicalURL(siteURL, route string) string {
+	if strings.TrimSpace(siteURL) == "" {
+		return ""
+	}
+	return strings.TrimRight(siteURL, "/") + "/" + strings.TrimLeft(route, "/")
 }
 
 func sameOrInside(path, parent string) bool {
