@@ -5,13 +5,13 @@ site:
   url: https://bpstr.github.io/rootmark/
   repository: https://github.com/bpstr/rootmark
 
+preset: docs
+
 navigation:
   - label: Start
     url: /getting-started/
   - label: Config
     url: /configuration/
-  - label: Blog
-    url: /blog/
   - label: Themes
     url: /themes/
 
