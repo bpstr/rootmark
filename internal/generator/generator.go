@@ -16,16 +16,19 @@ func Build(cfg config.Config) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	if !cfg.SitemapEnabled() {
-		return result, nil
-	}
 
 	output, err := filepath.Abs(result.Output)
 	if err != nil {
-		return Result{}, fmt.Errorf("resolve output for robots.txt: %w", err)
+		return Result{}, fmt.Errorf("resolve output: %w", err)
 	}
-	if err := writeRobots(cfg, output); err != nil {
-		return Result{}, fmt.Errorf("generate robots.txt: %w", err)
+	if err := enhancePreset(cfg, output); err != nil {
+		return Result{}, fmt.Errorf("apply %s preset: %w", cfg.Preset, err)
+	}
+
+	if cfg.SitemapEnabled() {
+		if err := writeRobots(cfg, output); err != nil {
+			return Result{}, fmt.Errorf("generate robots.txt: %w", err)
+		}
 	}
 	return result, nil
 }
