@@ -34,6 +34,28 @@ func TestLoadBlogPresetEnablesPublicationDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadDocsAndPortfolioPresetsStayLightweight(t *testing.T) {
+	for _, preset := range []string{"docs", "portfolio"} {
+		path := filepath.Join(t.TempDir(), preset+".yml")
+		if err := os.WriteFile(path, []byte("preset: "+preset+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := Load(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if preset == "docs" && !cfg.IsDocs() {
+			t.Fatalf("docs preset was not detected: %+v", cfg)
+		}
+		if preset == "portfolio" && !cfg.IsPortfolio() {
+			t.Fatalf("portfolio preset was not detected: %+v", cfg)
+		}
+		if cfg.FeedEnabled() || cfg.SitemapEnabled() {
+			t.Fatalf("%s preset unexpectedly enabled publication outputs: %+v", preset, cfg)
+		}
+	}
+}
+
 func TestLoadAllowsBlogPublicationDefaultsToBeDisabled(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "rootmark.yml")
 	if err := os.WriteFile(path, []byte("preset: blog\nfeed: false\nsitemap: false\n"), 0o644); err != nil {
