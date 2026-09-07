@@ -694,16 +694,26 @@ func copyStaticFile(sourcePath, relativePath, output string) error {
 	return nil
 }
 
+var excludedContentFiles = map[string]struct{}{
+	"readme.md":          {},
+	"agents.md":          {},
+	"claude.md":          {},
+	"codex.md":           {},
+	"gemini.md":          {},
+	"skill.md":           {},
+	"license":            {},
+	"license.md":         {},
+	"license.txt":        {},
+	"changelog.md":       {},
+	"contributing.md":    {},
+	"security.md":        {},
+	"support.md":         {},
+	"code_of_conduct.md": {},
+}
+
 func isRepositoryFile(relativePath string) bool {
-	if filepath.Dir(relativePath) != "." {
-		return false
-	}
-	switch strings.ToLower(filepath.Base(relativePath)) {
-	case "readme.md", "license", "license.md", "license.txt", "changelog.md", "contributing.md":
-		return true
-	default:
-		return false
-	}
+	_, excluded := excludedContentFiles[strings.ToLower(filepath.Base(relativePath))]
+	return excluded
 }
 
 func resolveLinks(root string, links []config.Link) []linkData {
