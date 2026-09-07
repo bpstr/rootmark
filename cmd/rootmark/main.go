@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/bpstr/rootmark/internal/config"
-	"github.com/bpstr/rootmark/internal/site"
+	"github.com/bpstr/rootmark/internal/generator"
 )
 
 var version = "dev"
@@ -64,7 +64,7 @@ func runBuild(args []string) error {
 		cfg.Build.Output = *output
 	}
 
-	result, err := site.Build(cfg)
+	result, err := generator.Build(cfg)
 	if err != nil {
 		return err
 	}
