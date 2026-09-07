@@ -49,7 +49,7 @@ about.md           -> /about/index.html
 docs/install.md    -> /docs/install/index.html
 ```
 
-Non-Markdown files are copied as static assets. `README.md`, common repository metadata and hidden files/directories are ignored.
+Non-Markdown files are copied as static assets. Hidden files and directories are ignored. Rootmark also excludes common repository and AI instruction files by basename anywhere in the content tree: `README.md`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `GEMINI.md`, `SKILL.md`, `LICENSE`, `LICENSE.md`, `LICENSE.txt`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md`.
 
 ## Blog preset
 
