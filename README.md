@@ -1,3 +1,7 @@
+<p>
+  <img src="docs/rootmark.svg" alt="Rootmark" width="180">
+</p>
+
 # Rootmark
 
 Rootmark turns Markdown repositories into static websites.
@@ -51,9 +55,17 @@ docs/install.md    -> /docs/install/index.html
 
 Non-Markdown files are copied as static assets. Hidden files and directories are ignored. Rootmark also excludes common repository and AI instruction files by basename anywhere in the content tree: `README.md`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `GEMINI.md`, `SKILL.md`, `LICENSE`, `LICENSE.md`, `LICENSE.txt`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md`.
 
-## Blog preset
+## Presets
 
-Turn the same Markdown repository into a blog with one config value:
+Rootmark keeps one content model and offers four small presentation presets:
+
+```yaml
+preset: simple # simple, blog, docs, or portfolio
+```
+
+`simple` maps Markdown directly to pages. `blog` adds publishing features. `docs` turns the file tree into documentation navigation. `portfolio` turns Markdown pages into project cards and case studies.
+
+### Blog
 
 ```yaml
 site:
@@ -64,23 +76,37 @@ site:
 preset: blog
 ```
 
-Then add dated Markdown files directly to the repository:
-
-```md
----
-title: Hello world
-description: My first post.
-date: 2026-09-07
-tags:
-  - notes
----
-
-# Hello world
-```
-
 Dated content becomes a post; undated Markdown remains a normal page. The blog preset adds a newest-first home listing, post metadata, previous/next navigation, RSS and Atom feeds, sitemap, robots metadata, Open Graph/canonical metadata, draft exclusion and a generated 404. If `index.md` exists, it becomes the introduction above the post list.
 
-See `docs/blog.md` for the full preset and publication frontmatter.
+See `docs/blog.md` for the complete behavior.
+
+### Docs
+
+```yaml
+site:
+  title: My project
+  repository: https://github.com/example/project
+
+preset: docs
+```
+
+The docs preset derives a hierarchical sidebar from the Markdown tree, adds active-page state, an automatic heading TOC, previous/next navigation, and an **Edit this page** link for GitHub repositories. It stays responsive and does not require a `site.url` for local builds.
+
+See `docs/docs.md` for the complete behavior.
+
+### Portfolio
+
+```yaml
+site:
+  title: Jane Developer
+  description: Selected work.
+
+preset: portfolio
+```
+
+`index.md` is the portfolio introduction. Other Markdown pages become projects, with optional `date`, `image` and `tags` metadata rendered as a responsive project grid. Use `project: false` to keep About, Contact or other pages out of the grid.
+
+See `docs/portfolio.md` for the complete behavior.
 
 ## Default theme
 
@@ -147,7 +173,9 @@ template: landing
 ---
 ```
 
-See `docs/themes.md` for the complete format and template context, including the blog publication data available to themes.
+The docs and portfolio presets enhance the theme's `<main>` element with semantic `rootmark-docs-*` and `rootmark-portfolio-*` markup that themes can restyle.
+
+See `docs/themes.md` for the complete format and template context.
 
 ## Site metadata
 
@@ -181,7 +209,7 @@ template: default
 # About
 ```
 
-Without a frontmatter title, Rootmark uses the first level-one heading and then falls back to the filename. Publication metadata can additionally define `date`, `updated`, `draft`, `image`, `author`, `tags` and `canonical`.
+Without a frontmatter title, Rootmark uses the first level-one heading and then falls back to the filename. Publication metadata can additionally define `date`, `updated`, `draft`, `image`, `author`, `tags` and `canonical`. The portfolio preset also recognizes `project: false` as an opt-out from the project grid.
 
 ## GitHub Pages
 
