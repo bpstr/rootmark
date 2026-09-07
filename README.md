@@ -51,6 +51,37 @@ docs/install.md    -> /docs/install/index.html
 
 Non-Markdown files are copied as static assets. `README.md`, common repository metadata and hidden files/directories are ignored.
 
+## Blog preset
+
+Turn the same Markdown repository into a blog with one config value:
+
+```yaml
+site:
+  title: My blog
+  description: Notes about software.
+  url: https://example.com/
+
+preset: blog
+```
+
+Then add dated Markdown files directly to the repository:
+
+```md
+---
+title: Hello world
+description: My first post.
+date: 2026-09-07
+tags:
+  - notes
+---
+
+# Hello world
+```
+
+Dated content becomes a post; undated Markdown remains a normal page. The blog preset adds a newest-first home listing, post metadata, previous/next navigation, RSS and Atom feeds, sitemap, robots metadata, Open Graph/canonical metadata, draft exclusion and a generated 404. If `index.md` exists, it becomes the introduction above the post list.
+
+See `docs/blog.md` for the full preset and publication frontmatter.
+
 ## Default theme
 
 Rootmark ships with a polished, narrow default theme designed for developer-friendly content. It has a subtle terminal-like header, responsive typography, strong code rendering, accessible focus states, and automatic light/dark mode through the operating-system preference. It requires no JavaScript.
@@ -116,7 +147,7 @@ template: landing
 ---
 ```
 
-See `docs/themes.md` for the complete format and template context.
+See `docs/themes.md` for the complete format and template context, including the blog publication data available to themes.
 
 ## Site metadata
 
@@ -134,7 +165,7 @@ site:
   repository: https://github.com/example/project
 ```
 
-`url` is used for canonical page URLs. Local favicon/logo paths are resolved correctly from nested pages and are copied with the rest of the site's static files.
+`url` is used for canonical page URLs and publication outputs. Local favicon/logo paths are resolved correctly from nested pages and are copied with the rest of the site's static files.
 
 ## Frontmatter
 
@@ -150,7 +181,7 @@ template: default
 # About
 ```
 
-Without a frontmatter title, Rootmark uses the first level-one heading and then falls back to the filename.
+Without a frontmatter title, Rootmark uses the first level-one heading and then falls back to the filename. Publication metadata can additionally define `date`, `updated`, `draft`, `image`, `author`, `tags` and `canonical`.
 
 ## GitHub Pages
 
@@ -207,11 +238,13 @@ site:
   logo: logo.svg
   repository: https://github.com/example/project
 
+preset: simple
+
+theme: https://github.com/example/rootmark-theme
+
 build:
   source: .
   output: _site
-
-theme: https://github.com/example/rootmark-theme
 ```
 
 Both build paths can be overridden from the CLI:
