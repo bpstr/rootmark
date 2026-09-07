@@ -144,6 +144,20 @@ A blog-aware theme can render publication metadata without introducing another c
 {{end}}
 ```
 
+## Preset enhancement contract
+
+The `docs` and `portfolio` presets intentionally reuse format `1` instead of creating theme-specific APIs. They enhance the generated document around the theme's `<main>` element after normal template rendering.
+
+A theme used with either preset therefore needs one normal `<main>` container. Rootmark injects semantic classes that themes can restyle:
+
+```text
+rootmark-docs-*
+rootmark-portfolio-*
+rootmark-project-*
+```
+
+The preset ships a compact fallback layout so community themes remain usable without special support. Theme CSS can override those classes for a completely custom documentation sidebar, TOC, portfolio grid or project presentation.
+
 ## Additional templates
 
 A theme may add layouts such as `landing.html`:
