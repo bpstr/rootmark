@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" role="img" aria-labelledby="title desc">
+  <title id="title">Rootmark</title>
+  <desc id="desc">Rootmark logo with a terminal prompt growing into a branching root mark.</desc>
+  <style>
+    .ink { fill: #17191a; stroke: #17191a; }
+    .muted { fill: #737a80; stroke: #737a80; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #f0f2ed; stroke: #f0f2ed; }
+      .muted { fill: #9aa1a6; stroke: #9aa1a6; }
+    }
+  </style>
+  <g transform="translate(6 12)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect class="ink" x="1.5" y="1.5" width="69" height="69" rx="17" stroke-width="3"/>
+    <path class="muted" d="M17 24h12l-7 7 7 7H17" stroke-width="3"/>
+    <path class="ink" d="M43 20v24m0 0-11 9m11-9 11 9m-11-2v12" stroke-width="3"/>
+    <circle class="ink" cx="43" cy="44" r="3.3" stroke="none"/>
+  </g>
+  <text class="ink" x="96" y="58" stroke="none" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="34" font-weight="700" letter-spacing="-1.4">rootmark</text>
+  <text class="muted" x="98" y="77" stroke="none" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="500" letter-spacing="1.1">MARKDOWN → WEB</text>
+</svg>
