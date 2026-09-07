@@ -59,29 +59,29 @@ footer:
 
 `favicon` and `logo` may point to local site files or absolute URLs. Local paths are resolved from every generated page. Ordinary non-Markdown files in the content tree are copied to the same path in the generated site, so a root-level `favicon.svg` needs no special assets directory.
 
-`repository` exposes the source repository URL to themes.
+`repository` exposes the source repository URL to themes. The docs preset additionally uses public GitHub repository URLs to create **Edit this page** links.
 
 ## Preset
 
-`preset` defaults to `simple`.
+`preset` defaults to `simple` and accepts four values:
 
 ```yaml
-preset: simple
+preset: simple # simple, blog, docs, or portfolio
 ```
 
-`simple` renders the Markdown tree directly. `blog` keeps the same content model but treats dated content as posts and enables chronological publishing features, feeds, sitemap, social metadata and a generated 404.
+`simple` renders the Markdown tree directly.
 
-```yaml
-preset: blog
-```
+`blog` keeps the same content model but treats dated content as posts and enables chronological publishing features, feeds, sitemap, social metadata and a generated 404. See [Blog preset](/blog/).
 
-See [Blog preset](/blog/) for the complete behavior.
+`docs` derives hierarchical documentation navigation from the Markdown tree, adds a heading TOC, previous/next navigation and GitHub edit links. See [Docs preset](/docs/).
+
+`portfolio` uses `index.md` as a landing page and presents other Markdown pages as project cards/case studies. See [Portfolio preset](/portfolio/).
 
 ## Publication outputs
 
 `feed` controls both RSS 2.0 (`/rss.xml`) and Atom (`/atom.xml`). `sitemap` controls `/sitemap.xml` and automatic `/robots.txt` generation.
 
-They default to `false` for the simple preset and `true` for the blog preset. Explicit values always win:
+They default to `false` for `simple`, `docs` and `portfolio`, and `true` for `blog`. Explicit values always win:
 
 ```yaml
 preset: blog
@@ -107,9 +107,13 @@ rootmark build --source docs --output _site
 
 See [Themes](/themes/) for the theme repository format.
 
+The docs and portfolio presets enhance the theme's `<main>` element after Markdown rendering, so themes used with those presets must include a normal `<main>` container.
+
 ## Navigation
 
 `navigation` is an ordered list of label/URL pairs. URLs beginning with `/` are site-root-relative and are converted to correct relative links on nested pages. Absolute URLs are kept unchanged.
+
+The docs preset has an additional generated documentation navigation tree; `navigation` remains the compact global header navigation.
 
 ## Primary CTA
 
@@ -166,5 +170,14 @@ canonical: https://example.com/custom-canonical/
 `title`, `description` and `template` work for every preset. If `title` is omitted, Rootmark uses the first level-one heading and then the filename. If `description` is omitted, Rootmark derives a short description from the first prose paragraph.
 
 `date`, `updated`, `image`, `author`, `tags`, `canonical` and `draft` provide publication metadata. In the blog preset, dated content is treated as a post and participates in listings, feeds and previous/next navigation. `draft: true` excludes a page from the production build.
+
+Portfolio pages may additionally opt out of the project grid:
+
+```md
+---
+title: About
+project: false
+---
+```
 
 If `template` is omitted, the active theme's `default.html` is used.
