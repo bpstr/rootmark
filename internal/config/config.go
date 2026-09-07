@@ -97,8 +97,10 @@ func Load(path string) (Config, error) {
 	if cfg.Preset == "" {
 		cfg.Preset = "simple"
 	}
-	if cfg.Preset != "simple" && cfg.Preset != "blog" {
-		return Config{}, fmt.Errorf("preset must be simple or blog")
+	switch cfg.Preset {
+	case "simple", "blog", "docs", "portfolio":
+	default:
+		return Config{}, fmt.Errorf("preset must be simple, blog, docs, or portfolio")
 	}
 
 	if cfg.Primary.Style == "" {
@@ -114,6 +116,14 @@ func Load(path string) (Config, error) {
 
 func (c Config) IsBlog() bool {
 	return strings.EqualFold(strings.TrimSpace(c.Preset), "blog")
+}
+
+func (c Config) IsDocs() bool {
+	return strings.EqualFold(strings.TrimSpace(c.Preset), "docs")
+}
+
+func (c Config) IsPortfolio() bool {
+	return strings.EqualFold(strings.TrimSpace(c.Preset), "portfolio")
 }
 
 func (c Config) FeedEnabled() bool {
